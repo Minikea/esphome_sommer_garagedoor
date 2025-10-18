@@ -1,83 +1,84 @@
 esphome:
-  name: garagentor
-  platform: ESP8266         # To be changed according to the used board
-  board: nodemcuv2
+  name: esp32-garage
+  friendly_name: esp32-garage
 
-wifi:
-  ssid: !secret ssid          # Replace either with your secret or your SSID name
-  password: !secret wlan_pwd  # Replace either with your secret or with your password
-  manual_ip:                  # if you want to use DHCP place a '#' in front of lines 9 to 12
-    static_ip: 192.168.0.144
-    gateway: 192.168.0.1
-    subnet: 255.255.255.0
-  #use_address: 192.168.0.27 #used the flash over the air if DHCP was used in a first setup
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Garagentor Fallback Hotspot"
-    password: "7WHmKojbIpUk"
-
-captive_portal:
+esp32:
+  board: nodemcu-32s
+  variant: esp32
+  framework:
+    type: esp-idf
 
 # Enable logging
 logger:
 
 # Enable Home Assistant API
 api:
+  encryption:
+    key: !secret api_garage
 
-# Enable over the air updates
 ota:
+  - platform: esphome
+    password: !secret ota_garage
 
-switch:
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32-Garage Fallback Hotspot"
+    password: !secret fallback_garage
+
+captive_portal:
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: WiFi Signal dB
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    id: wifi_signal_pc
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+
+#Button version of garage door opener
+output:
   - platform: gpio
-    pin: 
-      number: D1                      # if you use other pins than D1 and D2 check the behavior of these pins during reboot of the ESP device
+    pin:
+      number: GPIO22
       inverted: True
-    name: "Garage door Open Switch"
-    id: open_switch
-    on_turn_on:
-      - delay: 250ms
-      - switch.turn_off: open_switch
-    restore_mode: ALWAYS_OFF
+    id: open_gpio
   - platform: gpio
-    pin: 
-      number: D2
+    pin:
+      number: GPIO21
       inverted: True
-    name: "Garage door close Switch"
-    id: close_switch
-    on_turn_on:
-      - delay: 250ms
-      - switch.turn_off: close_switch
-    restore_mode: ALWAYS_OFF
-  - platform: restart
-    name: "Garagentor Restart"
-  - platform: shutdown
-    name: "Garagentor Shutdown"
-    
+    id: close_gpio
+button:
+  - platform: output
+    name: "Garage door Open button"
+    id: open_button
+    output: open_gpio
+    duration: 100ms
+  - platform: output
+    name: "Garage door Close button"
+    id: close_button
+    output: close_gpio
+    duration: 100ms
 cover:
   - platform: template
-    name: "Garagentor"
+    name: "Door_Control"
     open_action:
-      # Cancel any previous action
-      - switch.turn_off: close_switch
-      # Turn the OPEN switch on briefly
-      - switch.turn_on: open_switch
-      - delay: 0.1s
-      - switch.turn_off: open_switch
+      - button.press: open_button
     close_action:
-      - switch.turn_off: open_switch
-      - switch.turn_on: close_switch
-      - delay: 0.1s
-      - switch.turn_off: close_switch
-    stop_action:
-      - switch.turn_off: close_switch
-      - switch.turn_off: open_switch
+      - button.press: close_button
     optimistic: true
-    assumed_state: true
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: "Garagentor IP"
-    ssid:
-      name: "Garagentor SSID"
+    assumed_state: true #It is possible to get the actual state of the door with an additional piece of connection (Output OC / Relay)
