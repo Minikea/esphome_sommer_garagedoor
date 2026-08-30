@@ -50,7 +50,21 @@ sensor:
     unit_of_measurement: "%"
     entity_category: "diagnostic"
 
-#Button version of garage door opener
+# state of the door : 5V: open (even not fully) or opening; 0V closed
+binary_sensor:
+  - platform: gpio
+    device_class: garage_door
+    id: garage_sensor
+    pin:
+      number: 4
+      mode: INPUT
+      inverted: false
+    name: Garage door sensor
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+
+#button works better tha switch
 output:
   - platform: gpio
     pin:
@@ -65,20 +79,26 @@ output:
 button:
   - platform: output
     name: "Garage door Open button"
-    id: open_button
+    id: garage_button_open
     output: open_gpio
-    duration: 100ms
+    duration: 200ms
   - platform: output
     name: "Garage door Close button"
-    id: close_button
+    id: garage_button_close
     output: close_gpio
-    duration: 100ms
+    duration: 200ms
+    
 cover:
   - platform: template
-    name: "Door_Control"
+    name: "Garage door state"
+    id: garage_door_state
     open_action:
-      - button.press: open_button
+      - button.press: garage_button_open
     close_action:
-      - button.press: close_button
-    optimistic: true
-    assumed_state: true #It is possible to get the actual state of the door with an additional piece of connection (Output OC / Relay)
+      - button.press: garage_button_close
+    lambda: |-
+      if (id(garage_sensor).state) {
+        return COVER_OPEN;
+      } else {
+        return COVER_CLOSED;
+      }
