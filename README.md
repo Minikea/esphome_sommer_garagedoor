@@ -21,6 +21,8 @@ In order to controll the garage door opener from the company Summer, I bought th
 ## Hardware
 
 Inside the wall controller there is certian place for a battery pack. Due to the fact that I don't use the battery I used this space to place the NodeMCU and the relay to. I cut a thin (3mm thick) wood plate so that it fit in that space and mounted the NodeMCU and the relay onto the plate. The plate is then fixed with cable ties into the housing. Before I fixed the plate in the housing I did the wiring from the NodeMCU to the relay and from the relay to the Connex PCB. I used pins GPIO21 and GPIO22 to connect to the relay. If you use other pins, please adapt them  in  ESPHOME.
+I also connected the Relay port (second from the top) to GPIO 4 to retrieve the door's state.
+There is no need for [this](https://www.sommer.eu/SOMMER/Downloads/Montageanleitung/Zubeh%C3%B6r/GTA%20Zubeh%C3%B6r/Output-OC_S10863-00001.pdf).
 
 ![Scheme](https://raw.githubusercontent.com/Minikea/esphome_sommer_garagedoor/master/esphome_garagedoor_opener.png)
 
